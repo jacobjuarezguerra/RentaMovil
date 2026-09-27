@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>RentaMovil - Analisis, diseno y pruebas</title>
+  <style>
+    @page { size: A4; margin: 1.7cm; }
+    @page uml { size: A4 landscape; margin: 1.2cm; }
+    :root { --azul:#17365d; --celeste:#dbeaf7; --gris:#eef1f4; --verde:#e8f5e9; }
+    * { box-sizing: border-box; }
+    body { margin:0; color:#1f2933; font-family:Arial, Helvetica, sans-serif; font-size:10.5pt; line-height:1.38; }
+    h1, h2, h3 { color:var(--azul); page-break-after:avoid; }
+    h1 { font-size:25pt; margin:0 0 10px; }
+    h2 { font-size:17pt; border-bottom:2px solid var(--azul); padding-bottom:4px; margin-top:24px; }
+    h3 { font-size:12pt; margin-bottom:5px; }
+    p { margin:5px 0 10px; }
+    ul, ol { margin-top:5px; }
+    li { margin-bottom:3px; }
+    table { width:100%; border-collapse:collapse; margin:10px 0 16px; font-size:9.1pt; }
+    th, td { border:1px solid #9aa5b1; padding:5px 6px; vertical-align:top; }
+    th { background:var(--celeste); color:#102a43; text-align:left; }
+    code { font-family:Consolas, monospace; font-size:9pt; }
+    .cover { min-height:25cm; display:flex; flex-direction:column; justify-content:center; text-align:center; page-break-after:always; }
+    .cover .university { font-size:15pt; color:var(--azul); font-weight:bold; }
+    .cover .course { margin-top:12px; font-size:12pt; }
+    .cover .title { margin:65px 0 14px; }
+    .cover .subtitle { font-size:15pt; color:#486581; }
+    .cover .author { margin-top:80px; font-size:12pt; }
+    .page-break { page-break-before:always; }
+    .uml-page { page:uml; page-break-before:always; page-break-inside:avoid; }
+    .uml-page svg { width:100%; height:14.8cm; }
+    .uml-page p { margin:3px 0 0; }
+    .uml-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; align-items:start; }
+    .uml-grid.two { grid-template-columns:repeat(2, 1fr); }
+    .uml-card { border:2px solid var(--azul); background:white; page-break-inside:avoid; }
+    .uml-card h3 { margin:0; padding:5px; text-align:center; background:var(--celeste); border-bottom:2px solid var(--azul); font-size:10pt; }
+    .uml-card pre { white-space:pre-wrap; margin:0; padding:6px; font:7.1pt/1.28 Consolas, monospace; }
+    .uml-card .members { border-top:1px solid var(--azul); }
+    .evidence { background:#111827; color:#e5e7eb; padding:10px; font:8.5pt/1.35 Consolas, monospace; white-space:pre-wrap; }
+    .note { background:#fff8db; border-left:4px solid #e0a800; padding:8px 10px; margin:10px 0; }
+    .ok { background:var(--verde); border-left:4px solid #2e7d32; padding:8px 10px; }
+    .formula { background:var(--gris); border-radius:4px; padding:7px 10px; font-family:Consolas, monospace; }
+    .small { font-size:8.5pt; }
+    .no-break { page-break-inside:avoid; }
+    svg { width:100%; height:auto; display:block; }
+  </style>
+</head>
+<body>
+  <section class="cover">
+    <div class="university">Universidad del Valle de Guatemala</div>
+    <div class="course">CC2008 — Programación Orientada a Objetos<br>Ciclo 2, 2026</div>
+    <div class="title"><h1>RentaMovil</h1></div>
+    <div class="subtitle">Ejercicio 4 — Herencia<br>Análisis, diseño UML y evidencia de pruebas</div>
+    <div class="author"><strong>Jacob Juárez Guerra</strong><br>Carné 261521</div>
+  </section>
+
+  <h2>1. Análisis de requisitos</h2>
+  <h3>1.1 Información que el sistema conserva</h3>
+  <ul>
+    <li>Para todo vehículo: placa única, marca, modelo, tarifa diaria y disponibilidad.</li>
+    <li>Para automóviles: cantidad de pasajeros y si la transmisión es automática.</li>
+    <li>Para motocicletas: cilindraje en centímetros cúbicos.</li>
+    <li>Para camionetas de carga: capacidad máxima en toneladas, incluyendo decimales.</li>
+    <li>Para la empresa: colección de vehículos e ingresos acumulados de alquileres confirmados.</li>
+  </ul>
+  <p>La información vive únicamente durante la ejecución. No se utilizan archivos de datos, base de datos ni interfaz gráfica.</p>
+
+  <h3>1.2 Requisitos funcionales</h3>
+  <table>
+    <tr><th>ID</th><th>Operación</th><th>Resultado y condiciones</th></tr>
+    <tr><td>RF-01</td><td>Registrar vehículo</td><td>Crea un automóvil, motocicleta o camioneta disponible. La placa debe ser no vacía y única; todos los valores cuantitativos deben ser positivos.</td></tr>
+    <tr><td>RF-02</td><td>Consultar flota</td><td>Muestra categoría, placa, marca, modelo, tarifa, características particulares y disponibilidad.</td></tr>
+    <tr><td>RF-03</td><td>Cotizar</td><td>Busca por placa y calcula el costo para una cantidad positiva de días. Puede cotizarse un vehículo ocupado y la consulta no cambia disponibilidad ni ingresos.</td></tr>
+    <tr><td>RF-04</td><td>Confirmar alquiler</td><td>Muestra primero el total. Solo tras la aceptación cambia el vehículo a ocupado y suma el importe completo a los ingresos.</td></tr>
+    <tr><td>RF-05</td><td>Cancelar alquiler</td><td>Conserva exactamente el estado y los ingresos anteriores.</td></tr>
+    <tr><td>RF-06</td><td>Registrar devolución</td><td>Un vehículo ocupado vuelve a estar disponible. No cobra ni elimina el ingreso original.</td></tr>
+    <tr><td>RF-07</td><td>Generar reporte</td><td>Muestra totales registrados, disponibles y alquilados, desglose por categoría e ingresos acumulados.</td></tr>
+    <tr><td>RF-08</td><td>Mantener menú</td><td>El menú permanece activo hasta elegir salir y recupera entradas con formato incorrecto sin finalizar inesperadamente.</td></tr>
+  </table>
+
+  <h3>1.3 Reglas de validez y consistencia</h3>
+  <ul>
+    <li>Las placas se recortan y convierten a mayúsculas; por ello <code>a001</code> y <code>A001</code> son la misma placa.</li>
+    <li>Tarifa, pasajeros, cilindraje, capacidad y días deben ser mayores que cero. Los días, pasajeros y cilindraje son enteros.</li>
+    <li>No se permite alquilar un vehículo ocupado ni devolver uno que ya está disponible.</li>
+    <li>Una placa inexistente o una operación inválida genera un mensaje y no produce cambios parciales.</li>
+    <li>Los importes se presentan con dos decimales.</li>
+  </ul>
+
+  <h2>2. Reglas de cobro</h2>
+  <div class="formula">Base = tarifa diaria × días</div>
+  <table>
+    <tr><th>Categoría</th><th>Fórmula</th><th>Condición particular</th></tr>
+    <tr><td>Automóvil</td><td><code>base + (automático ? 50 × días : 0)</code></td><td>El recargo Q50 se aplica cada día únicamente a transmisión automática.</td></tr>
+    <tr><td>Motocicleta</td><td><code>base + (cilindraje &gt; 250 ? 75 : 0)</code></td><td>Q75 es un único cargo por todo el alquiler; una motocicleta de exactamente 250 cc no lo paga.</td></tr>
+    <tr><td>Camioneta</td><td><code>base + 100 × toneladas × días</code></td><td>Se usa la capacidad máxima, aunque el cliente transporte menos carga.</td></tr>
+  </table>
+  <div class="note"><strong>Ejemplo verificado:</strong> camioneta de Q200 diarios y 1.5 toneladas durante tres días: Q600 de base + Q450 de recargo = <strong>Q1,050.00</strong>.</div>
+
+  <h2 class="page-break">3. Clases y responsabilidades</h2>
+  <table>
+    <tr><th>Clase</th><th>Responsabilidad</th><th>Estado principal</th></tr>
+    <tr><td><code>Vehiculo</code> (abstracta)</td><td>Concentrar datos, validaciones y cambios de disponibilidad comunes; definir el contrato polimórfico de costo.</td><td>placa, marca, modelo, tarifaDiaria, disponible</td></tr>
+    <tr><td><code>Automovil</code></td><td>Guardar pasajeros y transmisión; calcular el recargo automático.</td><td>cantidadPasajeros, automatico</td></tr>
+    <tr><td><code>Motocicleta</code></td><td>Guardar cilindraje; decidir el cargo único de Q75.</td><td>cilindraje</td></tr>
+    <tr><td><code>CamionCarga</code></td><td>Guardar capacidad máxima; calcular el recargo por tonelada y día.</td><td>capacidadToneladas</td></tr>
+    <tr><td><code>FlotaRentaMovil</code></td><td>Coordinar registros, búsquedas, cotizaciones, alquileres, devoluciones, ingresos y reportes.</td><td>mapa de vehículos, ingresosAcumulados</td></tr>
+    <tr><td><code>Cotizacion</code></td><td>Transportar un resultado inmutable sin modificar el modelo.</td><td>placa, descripción, disponibilidad, días, total</td></tr>
+    <tr><td><code>ReporteFlota</code> / <code>ConteoCategoria</code></td><td>Representar una fotografía inmutable de totales generales y por categoría.</td><td>conteos e ingresos</td></tr>
+    <tr><td><code>Main</code></td><td>Gestionar menú, lectura segura, mensajes, confirmación y datos de demostración.</td><td>Scanner y FlotaRentaMovil</td></tr>
+  </table>
+
+  <h3>3.1 Constructores, métodos y visibilidad</h3>
+  <table class="small">
+    <tr><th>Elemento</th><th>Firma resumida</th><th>Propósito</th></tr>
+    <tr><td><code>Vehiculo</code></td><td><code># Vehiculo(String, String, String, double)</code></td><td>Inicializa los datos comunes y deja el objeto disponible.</td></tr>
+    <tr><td></td><td><code>+ calcularCosto(int): double</code> abstracto</td><td>Obliga a cada categoría a decidir su precio.</td></tr>
+    <tr><td></td><td><code>+ alquilar(): void</code>, <code>+ devolver(): void</code></td><td>Protegen las únicas transiciones válidas de disponibilidad.</td></tr>
+    <tr><td></td><td><code>+ descripcionCompleta(): String</code></td><td>Une datos comunes, particulares y estado.</td></tr>
+    <tr><td>Subclases</td><td><code>+ Automovil(..., int, boolean)</code><br><code>+ Motocicleta(..., int)</code><br><code>+ CamionCarga(..., double)</code></td><td>Reciben y validan los datos particulares además de invocar al constructor base.</td></tr>
+    <tr><td><code>FlotaRentaMovil</code></td><td><code>+ registrarVehiculo(Vehiculo): void</code><br><code>+ buscarVehiculo(String): Vehiculo</code><br><code>+ consultarFlota(): List&lt;Vehiculo&gt;</code></td><td>Administra el inventario y evita placas repetidas.</td></tr>
+    <tr><td></td><td><code>+ cotizar(String, int): Cotizacion</code></td><td>Calcula sin efectos secundarios, incluso si está ocupado.</td></tr>
+    <tr><td></td><td><code>+ confirmarAlquiler(String, int): Cotizacion</code></td><td>Revalida, ocupa y suma el ingreso como una sola operación.</td></tr>
+    <tr><td></td><td><code>+ registrarDevolucion(String): void</code><br><code>+ generarReporte(): ReporteFlota</code></td><td>Libera vehículos y crea resúmenes inmutables.</td></tr>
+    <tr><td><code>Main</code></td><td><code>+ main(String[]): void</code><br><code>+ crearFlotaDemostracion(): FlotaRentaMovil</code></td><td>Inicia la aplicación y carga seis vehículos de muestra.</td></tr>
+  </table>
+
+  <h3>3.2 Inventario completo de atributos</h3>
+  <table class="small">
+    <tr><th>Clase</th><th>Atributos: visibilidad, nombre y tipo</th><th>Propósito</th></tr>
+    <tr><td><code>CategoriaVehiculo</code></td><td><code>- nombre: String</code></td><td>Texto legible de cada constante del enum.</td></tr>
+    <tr><td><code>Vehiculo</code></td><td><code>- placa: String</code><br><code>- marca: String</code><br><code>- modelo: String</code><br><code>- tarifaDiaria: double</code><br><code>- disponible: boolean</code></td><td>Identificador único; fabricante; modelo comercial; precio base por día; estado actual.</td></tr>
+    <tr><td><code>Automovil</code></td><td><code>- RECARGO_AUTOMATICO_DIARIO: double {static, final}</code><br><code>- cantidadPasajeros: int</code><br><code>- automatico: boolean</code></td><td>Q50 por día; capacidad de personas; tipo de transmisión.</td></tr>
+    <tr><td><code>Motocicleta</code></td><td><code>- LIMITE_CILINDRAJE: int {static, final}</code><br><code>- RECARGO_ALTO_CILINDRAJE: double {static, final}</code><br><code>- cilindraje: int</code></td><td>Límite de 250 cc; cargo único Q75; cilindraje de la unidad.</td></tr>
+    <tr><td><code>CamionCarga</code></td><td><code>- RECARGO_POR_TONELADA_DIARIO: double {static, final}</code><br><code>- capacidadToneladas: double</code></td><td>Q100 por tonelada/día; capacidad máxima decimal.</td></tr>
+    <tr><td><code>Cotizacion</code></td><td><code>- placa: String</code><br><code>- descripcionVehiculo: String</code><br><code>- disponible: boolean</code><br><code>- dias: int</code><br><code>- total: double</code></td><td>Fotografía inmutable del vehículo y del importe consultado.</td></tr>
+    <tr><td><code>ConteoCategoria</code></td><td><code>- registrados: int</code><br><code>- disponibles: int</code><br><code>- alquilados: int</code></td><td>Totales inmutables para una categoría.</td></tr>
+    <tr><td><code>ReporteFlota</code></td><td><code>- totalRegistrados: int</code><br><code>- totalDisponibles: int</code><br><code>- totalAlquilados: int</code><br><code>- ingresosAcumulados: double</code><br><code>- conteos: Map&lt;CategoriaVehiculo, ConteoCategoria&gt;</code></td><td>Fotografía inmutable del estado general y su desglose.</td></tr>
+    <tr><td><code>FlotaRentaMovil</code></td><td><code>- vehiculos: Map&lt;String, Vehiculo&gt;</code><br><code>- ingresosAcumulados: double</code></td><td>Índice por placa con orden de inserción; suma exclusiva de alquileres confirmados.</td></tr>
+    <tr><td><code>Main</code></td><td><code>- scanner: Scanner</code><br><code>- flota: FlotaRentaMovil</code></td><td>Origen de entrada de consola; servicio que coordina el caso.</td></tr>
+    <tr><td><code>PruebasRentaMovil</code></td><td><code>- aprobadas: int {static}</code><br><code>- fallidas: int {static}</code></td><td>Contadores del ejecutor de pruebas.</td></tr>
+  </table>
+
+  <h3>3.3 Inventario completo de operaciones</h3>
+  <table class="small">
+    <tr><th>Clase</th><th>Operaciones: visibilidad, parámetros y retorno</th><th>Propósito / resultado</th></tr>
+    <tr><td><code>CategoriaVehiculo</code></td><td><code>~ CategoriaVehiculo(nombre: String)</code><br><code>+ getNombre(): String</code></td><td>Inicializa y devuelve el nombre legible.</td></tr>
+    <tr><td><code>Vehiculo</code></td><td><code># Vehiculo(placa, marca, modelo: String; tarifa: double)</code><br><code>+ normalizarPlaca(String): String {static}</code><br><code># validarTexto(String, String): String {static}</code><br><code># validarPositivo(double, String): double {static}</code><br><code># validarEnteroPositivo(int, String): int {static}</code><br><code>+ costoBase(int): double</code><br><code>+ validarDias(int): void {static}</code><br><code>+ alquilar(): void</code><br><code>+ devolver(): void</code><br><code>+ calcularCosto(int): double {abstracto}</code><br><code>+ getCategoria(): CategoriaVehiculo {abstracto}</code><br><code># detalleEspecifico(): String {abstracto}</code><br><code>+ descripcionCompleta(): String</code><br><code>+ getPlaca/getMarca/getModelo(): String</code><br><code>+ getTarifaDiaria(): double</code><br><code>+ isDisponible(): boolean</code></td><td>Construye y valida el estado común; controla transiciones; define los contratos polimórficos; expone lecturas sin setters.</td></tr>
+    <tr><td><code>Automovil</code></td><td><code>+ Automovil(String, String, String, double, int, boolean)</code><br><code>+ calcularCosto(int): double</code><br><code>+ getCategoria(): CategoriaVehiculo</code><br><code># detalleEspecifico(): String</code><br><code>+ getCantidadPasajeros(): int</code><br><code>+ isAutomatico(): boolean</code></td><td>Inicializa datos particulares; calcula tarifa con posible recargo diario; devuelve categoría, descripción y lecturas.</td></tr>
+    <tr><td><code>Motocicleta</code></td><td><code>+ Motocicleta(String, String, String, double, int)</code><br><code>+ calcularCosto(int): double</code><br><code>+ getCategoria(): CategoriaVehiculo</code><br><code># detalleEspecifico(): String</code><br><code>+ getCilindraje(): int</code></td><td>Inicializa y calcula el posible cargo único; devuelve categoría, descripción y cilindraje.</td></tr>
+    <tr><td><code>CamionCarga</code></td><td><code>+ CamionCarga(String, String, String, double, double)</code><br><code>+ calcularCosto(int): double</code><br><code>+ getCategoria(): CategoriaVehiculo</code><br><code># detalleEspecifico(): String</code><br><code>+ getCapacidadToneladas(): double</code></td><td>Inicializa y cobra por capacidad/día; devuelve categoría, descripción y capacidad.</td></tr>
+    <tr><td><code>Cotizacion</code></td><td><code>+ Cotizacion(Vehiculo, int, double)</code><br><code>+ getPlaca(): String</code><br><code>+ getDescripcionVehiculo(): String</code><br><code>+ isDisponible(): boolean</code><br><code>+ getDias(): int</code><br><code>+ getTotal(): double</code><br><code>+ toString(): String</code></td><td>Crea un resultado inmutable y devuelve cada dato o su representación imprimible.</td></tr>
+    <tr><td><code>ConteoCategoria</code></td><td><code>+ ConteoCategoria(int, int, int)</code><br><code>+ getRegistrados/getDisponibles/getAlquilados(): int</code></td><td>Inicializa y expone los tres conteos inmutables.</td></tr>
+    <tr><td><code>ReporteFlota</code></td><td><code>+ ReporteFlota(int, int, int, double, Map)</code><br><code>+ getTotalRegistrados/getTotalDisponibles/getTotalAlquilados(): int</code><br><code>+ getIngresosAcumulados(): double</code><br><code>+ getConteos(): Map&lt;CategoriaVehiculo, ConteoCategoria&gt;</code></td><td>Crea la fotografía general; devuelve totales, ingresos y mapa no modificable.</td></tr>
+    <tr><td><code>FlotaRentaMovil</code></td><td><code>+ FlotaRentaMovil()</code><br><code>+ registrarVehiculo(Vehiculo): void</code><br><code>+ buscarVehiculo(String): Vehiculo</code><br><code>+ consultarFlota(): List&lt;Vehiculo&gt;</code><br><code>+ cotizar(String, int): Cotizacion</code><br><code>+ confirmarAlquiler(String, int): Cotizacion</code><br><code>+ registrarDevolucion(String): void</code><br><code>+ generarReporte(): ReporteFlota</code><br><code>+ getIngresosAcumulados(): double</code></td><td>Gestiona todas las operaciones del negocio; las consultas devuelven vistas/resultados y las confirmaciones actualizan el estado de forma coherente.</td></tr>
+    <tr><td><code>Main</code></td><td><code>+ Main(Scanner, FlotaRentaMovil)</code><br><code>+ main(String[]): void {static}</code><br><code>+ crearFlotaDemostracion(): FlotaRentaMovil {static}</code><br><code>+ ejecutar(): void</code><br><code>- mostrarMenu/registrarVehiculo/consultarFlota/cotizar/alquilar/devolver/mostrarReporte(): void</code><br><code>- leerTexto(String): String</code><br><code>- leerEntero(String): int</code><br><code>- leerEnteroPositivo(String): int</code><br><code>- leerDoublePositivo(String): double</code><br><code>- leerSiNo(String): boolean</code></td><td>Inicia el sistema, presenta cada caso de uso y repite lecturas hasta recibir formatos válidos.</td></tr>
+    <tr><td><code>PruebasRentaMovil</code></td><td><code>- PruebasRentaMovil()</code><br><code>+ main(String[]): void {static}</code><br><code>- probarCalculos/probarValidaciones/probarOperacionesEIngresos/probarReporte(): void {static}</code><br><code>- verificar(String, boolean): void {static}</code><br><code>- verificarEntero(String, int, int): void {static}</code><br><code>- verificarDouble(String, double, double): void {static}</code><br><code>- esperarExcepcion(String, Class, Accion): void {static}</code></td><td>Ejecuta escenarios, compara resultados y termina con error si alguna comprobación falla.</td></tr>
+  </table>
+
+  <h3>3.4 Justificación del diseño</h3>
+  <p>La herencia evita duplicar placa, marca, modelo, tarifa, disponibilidad y sus validaciones. El cálculo se declara abstracto en <code>Vehiculo</code> y se implementa en cada subclase: por eso <code>FlotaRentaMovil</code> solicita el costo polimórficamente sin preguntar el tipo concreto. La disponibilidad solo cambia mediante operaciones protegidas por reglas, mientras los resultados de cotización y reporte son inmutables.</p>
+  <p>Para añadir otra categoría se crea una nueva subclase, se incorpora su valor en <code>CategoriaVehiculo</code> y se agrega su captura al menú. El algoritmo de alquiler, la búsqueda, los ingresos y el reporte continúan utilizando el contrato común.</p>
+
+  <section class="uml-page">
+    <h2>4.1 UML de relaciones</h2>
+    <svg viewBox="0 0 1120 700" role="img" aria-label="Diagrama UML de RentaMovil">
+      <defs>
+        <marker id="triangle" markerWidth="14" markerHeight="12" refX="12" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 z" fill="white" stroke="#17365d" stroke-width="1.5"/></marker>
+        <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#17365d"/></marker>
+        <marker id="diamond" markerWidth="16" markerHeight="12" refX="2" refY="6" orient="auto"><path d="M1,6 L7,1 L13,6 L7,11 z" fill="white" stroke="#17365d" stroke-width="1.5"/></marker>
+        <style>
+          .box{fill:#fff;stroke:#17365d;stroke-width:2}.head{fill:#dbeaf7;stroke:#17365d;stroke-width:2}
+          .t{font:15px Arial;fill:#1f2933}.name{font:bold 17px Arial;fill:#102a43}.abstract{font:italic bold 17px Arial;fill:#102a43}
+          .line{stroke:#17365d;stroke-width:2;fill:none}.dash{stroke:#486581;stroke-width:1.8;stroke-dasharray:7 5;fill:none}
+        </style>
+      </defs>
+
+      <!-- Main -->
+      <rect class="box" x="20" y="20" width="320" height="170"/><rect class="head" x="20" y="20" width="320" height="38"/>
+      <text class="name" x="180" y="45" text-anchor="middle">Main</text>
+      <text class="t" x="32" y="82">- scanner: Scanner</text><text class="t" x="32" y="104">- flota: FlotaRentaMovil</text>
+      <line class="line" x1="20" y1="120" x2="340" y2="120"/>
+      <text class="t" x="32" y="145">+ main(args: String[]): void</text>
+      <text class="t" x="32" y="168">+ crearFlotaDemostracion(): FlotaRentaMovil</text>
+
+      <!-- Vehiculo -->
+      <rect class="box" x="390" y="20" width="340" height="245"/><rect class="head" x="390" y="20" width="340" height="38"/>
+      <text class="abstract" x="560" y="45" text-anchor="middle">Vehiculo {abstracta}</text>
+      <text class="t" x="402" y="80">- placa: String</text><text class="t" x="402" y="101">- marca: String</text>
+      <text class="t" x="402" y="122">- modelo: String</text><text class="t" x="402" y="143">- tarifaDiaria: double</text>
+      <text class="t" x="402" y="164">- disponible: boolean</text><line class="line" x1="390" y1="177" x2="730" y2="177"/>
+      <text class="t" x="402" y="198"># Vehiculo(placa, marca, modelo, tarifa)</text>
+      <text class="t" x="402" y="219">+ calcularCosto(dias: int): double {abstracto}</text>
+      <text class="t" x="402" y="240">+ alquilar(): void  + devolver(): void</text>
+      <text class="t" x="402" y="259">+ descripcionCompleta(): String</text>
+
+      <!-- Categoria -->
+      <rect class="box" x="780" y="20" width="320" height="170"/><rect class="head" x="780" y="20" width="320" height="38"/>
+      <text class="name" x="940" y="43" text-anchor="middle">«enumeration»</text><text class="name" x="940" y="78" text-anchor="middle">CategoriaVehiculo</text>
+      <line class="line" x1="780" y1="92" x2="1100" y2="92"/>
+      <text class="t" x="792" y="116">AUTOMOVIL</text><text class="t" x="792" y="139">MOTOCICLETA</text><text class="t" x="792" y="162">CAMION_CARGA</text>
+
+      <!-- subclases -->
+      <rect class="box" x="20" y="355" width="320" height="190"/><rect class="head" x="20" y="355" width="320" height="38"/>
+      <text class="name" x="180" y="380" text-anchor="middle">Automovil</text>
+      <text class="t" x="32" y="417">- cantidadPasajeros: int</text><text class="t" x="32" y="439">- automatico: boolean</text>
+      <line class="line" x1="20" y1="455" x2="340" y2="455"/><text class="t" x="32" y="478">+ Automovil(..., pasajeros, automatico)</text>
+      <text class="t" x="32" y="501">+ calcularCosto(dias: int): double</text><text class="t" x="32" y="524">+ getCategoria(): CategoriaVehiculo</text>
+
+      <rect class="box" x="400" y="355" width="320" height="190"/><rect class="head" x="400" y="355" width="320" height="38"/>
+      <text class="name" x="560" y="380" text-anchor="middle">Motocicleta</text>
+      <text class="t" x="412" y="417">- cilindraje: int</text><line class="line" x1="400" y1="435" x2="720" y2="435"/>
+      <text class="t" x="412" y="461">+ Motocicleta(..., cilindraje)</text><text class="t" x="412" y="486">+ calcularCosto(dias: int): double</text>
+      <text class="t" x="412" y="511">+ getCategoria(): CategoriaVehiculo</text>
+
+      <rect class="box" x="780" y="355" width="320" height="190"/><rect class="head" x="780" y="355" width="320" height="38"/>
+      <text class="name" x="940" y="380" text-anchor="middle">CamionCarga</text>
+      <text class="t" x="792" y="417">- capacidadToneladas: double</text><line class="line" x1="780" y1="435" x2="1100" y2="435"/>
+      <text class="t" x="792" y="461">+ CamionCarga(..., capacidad)</text><text class="t" x="792" y="486">+ calcularCosto(dias: int): double</text>
+      <text class="t" x="792" y="511">+ getCategoria(): CategoriaVehiculo</text>
+
+      <!-- inheritance -->
+      <path class="line" d="M180 355 L180 310 L500 310 L500 266" marker-end="url(#triangle)"/>
+      <path class="line" d="M560 355 L560 266" marker-end="url(#triangle)"/>
+      <path class="line" d="M940 355 L940 310 L620 310 L620 266" marker-end="url(#triangle)"/>
+
+      <!-- service and DTOs -->
+      <rect class="box" x="20" y="580" width="350" height="105"/><rect class="head" x="20" y="580" width="350" height="34"/>
+      <text class="name" x="195" y="603" text-anchor="middle">FlotaRentaMovil</text>
+      <text class="t" x="32" y="638">- vehiculos: Map&lt;String, Vehiculo&gt;</text><text class="t" x="32" y="661">- ingresosAcumulados: double</text>
+
+      <rect class="box" x="430" y="580" width="250" height="105"/><rect class="head" x="430" y="580" width="250" height="34"/>
+      <text class="name" x="555" y="603" text-anchor="middle">Cotizacion</text>
+      <text class="t" x="442" y="638">- dias: int</text><text class="t" x="442" y="661">- total: double</text>
+
+      <rect class="box" x="740" y="580" width="360" height="105"/><rect class="head" x="740" y="580" width="360" height="34"/>
+      <text class="name" x="920" y="603" text-anchor="middle">ReporteFlota</text>
+      <text class="t" x="752" y="638">- conteos: Map&lt;Categoria, ConteoCategoria&gt;</text><text class="t" x="752" y="661">- ingresosAcumulados: double</text>
+
+      <path class="line" d="M195 580 L195 560 L365 560 L365 143 L390 143" marker-start="url(#diamond)"/><text class="t" x="207" y="577">1 contiene 0..*</text>
+      <path class="dash" d="M20 180 L8 180 L8 632 L20 632" marker-end="url(#arrow)"/><text class="t" x="12" y="334" transform="rotate(-90 12 334)">utiliza</text>
+      <path class="dash" d="M370 632 L430 632" marker-end="url(#arrow)"/><text class="t" x="382" y="623">crea</text>
+      <path class="dash" d="M370 660 L740 660" marker-end="url(#arrow)"/><text class="t" x="535" y="679">genera</text>
+    </svg>
+    <p class="small"><strong>Relaciones:</strong> las flechas triangulares representan generalización; la flota contiene vehículos y crea resultados inmutables. <code>Main</code> depende de <code>FlotaRentaMovil</code> como capa de interacción.</p>
+  </section>
+
+  <section class="uml-page">
+    <h2>4.2 UML detallado — jerarquía de vehículos</h2>
+    <div class="uml-grid">
+      <div class="uml-card">
+        <h3><em>Vehiculo {abstracta}</em></h3>
+        <pre>- placa: String
+- marca: String
+- modelo: String
+- tarifaDiaria: double
+- disponible: boolean</pre>
+        <pre class="members"># Vehiculo(String, String, String, double)
++ normalizarPlaca(String): String {static}
+# validarTexto(String, String): String {static}
+# validarPositivo(double, String): double {static}
+# validarEnteroPositivo(int, String): int {static}
++ costoBase(int): double
++ validarDias(int): void {static}
++ alquilar(): void
++ devolver(): void
++ calcularCosto(int): double {abstracto}
++ getCategoria(): CategoriaVehiculo {abstracto}
+# detalleEspecifico(): String {abstracto}
++ descripcionCompleta(): String
++ getPlaca(): String
++ getMarca(): String
++ getModelo(): String
++ getTarifaDiaria(): double
++ isDisponible(): boolean</pre>
+      </div>
+      <div class="uml-card">
+        <h3>Automovil</h3>
+        <pre>- RECARGO_AUTOMATICO_DIARIO: double {static, final}
+- cantidadPasajeros: int
+- automatico: boolean</pre>
+        <pre class="members">+ Automovil(String, String, String, double, int, boolean)
++ calcularCosto(int): double
++ getCategoria(): CategoriaVehiculo
+# detalleEspecifico(): String
++ getCantidadPasajeros(): int
++ isAutomatico(): boolean</pre>
+      </div>
+      <div class="uml-card">
+        <h3>Motocicleta</h3>
+        <pre>- LIMITE_CILINDRAJE: int {static, final}
+- RECARGO_ALTO_CILINDRAJE: double {static, final}
+- cilindraje: int</pre>
+        <pre class="members">+ Motocicleta(String, String, String, double, int)
++ calcularCosto(int): double
++ getCategoria(): CategoriaVehiculo
+# detalleEspecifico(): String
++ getCilindraje(): int</pre>
+      </div>
+      <div class="uml-card">
+        <h3>CamionCarga</h3>
+        <pre>- RECARGO_POR_TONELADA_DIARIO: double {static, final}
+- capacidadToneladas: double</pre>
+        <pre class="members">+ CamionCarga(String, String, String, double, double)
++ calcularCosto(int): double
++ getCategoria(): CategoriaVehiculo
+# detalleEspecifico(): String
++ getCapacidadToneladas(): double</pre>
+      </div>
+      <div class="uml-card">
+        <h3>«enumeration» CategoriaVehiculo</h3>
+        <pre>AUTOMOVIL
+MOTOCICLETA
+CAMION_CARGA
+- nombre: String</pre>
+        <pre class="members">~ CategoriaVehiculo(String)
++ getNombre(): String</pre>
+      </div>
+      <div class="uml-card">
+        <h3>Relaciones</h3>
+        <pre>Automovil       ──▷ Vehiculo
+Motocicleta     ──▷ Vehiculo
+CamionCarga     ──▷ Vehiculo
+
+Cada subclase implementa:
+• calcularCosto(int)
+• getCategoria()
+• detalleEspecifico()</pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="uml-page">
+    <h2>4.3 UML detallado — coordinación y resultados</h2>
+    <div class="uml-grid">
+      <div class="uml-card">
+        <h3>FlotaRentaMovil</h3>
+        <pre>- vehiculos: Map&lt;String, Vehiculo&gt;
+- ingresosAcumulados: double</pre>
+        <pre class="members">+ FlotaRentaMovil()
++ registrarVehiculo(Vehiculo): void
++ buscarVehiculo(String): Vehiculo
++ consultarFlota(): List&lt;Vehiculo&gt;
++ cotizar(String, int): Cotizacion
++ confirmarAlquiler(String, int): Cotizacion
++ registrarDevolucion(String): void
++ generarReporte(): ReporteFlota
++ getIngresosAcumulados(): double</pre>
+      </div>
+      <div class="uml-card">
+        <h3>Cotizacion</h3>
+        <pre>- placa: String
+- descripcionVehiculo: String
+- disponible: boolean
+- dias: int
+- total: double</pre>
+        <pre class="members">+ Cotizacion(Vehiculo, int, double)
++ getPlaca(): String
++ getDescripcionVehiculo(): String
++ isDisponible(): boolean
++ getDias(): int
++ getTotal(): double
++ toString(): String</pre>
+      </div>
+      <div class="uml-card">
+        <h3>ConteoCategoria</h3>
+        <pre>- registrados: int
+- disponibles: int
+- alquilados: int</pre>
+        <pre class="members">+ ConteoCategoria(int, int, int)
++ getRegistrados(): int
++ getDisponibles(): int
++ getAlquilados(): int</pre>
+      </div>
+      <div class="uml-card">
+        <h3>ReporteFlota</h3>
+        <pre>- totalRegistrados: int
+- totalDisponibles: int
+- totalAlquilados: int
+- ingresosAcumulados: double
+- conteos: Map&lt;CategoriaVehiculo, ConteoCategoria&gt;</pre>
+        <pre class="members">+ ReporteFlota(int, int, int, double, Map)
++ getTotalRegistrados(): int
++ getTotalDisponibles(): int
++ getTotalAlquilados(): int
++ getIngresosAcumulados(): double
++ getConteos(): Map&lt;CategoriaVehiculo, ConteoCategoria&gt;</pre>
+      </div>
+      <div class="uml-card">
+        <h3>Main</h3>
+        <pre>- scanner: Scanner
+- flota: FlotaRentaMovil</pre>
+        <pre class="members">+ Main(Scanner, FlotaRentaMovil)
++ main(String[]): void {static}
++ crearFlotaDemostracion(): FlotaRentaMovil {static}
++ ejecutar(): void
+- mostrarMenu(): void
+- registrarVehiculo(): void
+- consultarFlota(): void
+- cotizar(): void
+- alquilar(): void
+- devolver(): void
+- mostrarReporte(): void
+- leerTexto(String): String
+- leerEntero(String): int
+- leerEnteroPositivo(String): int
+- leerDoublePositivo(String): double
+- leerSiNo(String): boolean</pre>
+      </div>
+      <div class="uml-card">
+        <h3>Relaciones</h3>
+        <pre>Main ..&gt; FlotaRentaMovil
+FlotaRentaMovil ◇── 0..* Vehiculo
+FlotaRentaMovil ..&gt; Cotizacion
+FlotaRentaMovil ..&gt; ReporteFlota
+ReporteFlota ◆── 3 ConteoCategoria
+ReporteFlota ..&gt; CategoriaVehiculo</pre>
+      </div>
+    </div>
+  </section>
+
+  <h2 class="page-break">5. Colaboración durante un alquiler</h2>
+  <ol>
+    <li><code>Main</code> solicita placa y días con lectura validada.</li>
+    <li><code>FlotaRentaMovil.cotizar</code> localiza el vehículo y llama a su implementación polimórfica de <code>calcularCosto</code>.</li>
+    <li>La interfaz muestra descripción, disponibilidad y total sin modificar nada.</li>
+    <li>Si está disponible, pide confirmación explícita. Una respuesta negativa termina el caso sin cambios.</li>
+    <li>Con respuesta positiva, <code>confirmarAlquiler</code> vuelve a validar, llama a <code>Vehiculo.alquilar</code> y suma el total a los ingresos.</li>
+  </ol>
+  <p>Esta separación hace que una cotización o un intento rechazado nunca alcance las instrucciones que mutan disponibilidad e ingresos.</p>
+
+  <h2>6. Evidencia de pruebas</h2>
+  <p>Se compiló con <code>javac -encoding UTF-8 -d bin src/rentamovil/*.java</code> y se ejecutó <code>java -cp bin rentamovil.PruebasRentaMovil</code>.</p>
+  <table>
+    <tr><th>Escenario</th><th>Resultado esperado</th><th>Resultado obtenido</th></tr>
+    <tr><td>Automóvil automático, Q300, 2 días</td><td>Q700.00</td><td>Q700.00 — OK</td></tr>
+    <tr><td>Automóvil manual, Q280, 3 días</td><td>Q840.00</td><td>Q840.00 — OK</td></tr>
+    <tr><td>Moto de 250 cc, Q150, 4 días</td><td>Q600.00, sin recargo</td><td>Q600.00 — OK</td></tr>
+    <tr><td>Moto de 300 cc, Q250, 2 días</td><td>Q575.00, Q75 una vez</td><td>Q575.00 — OK</td></tr>
+    <tr><td>Camioneta, Q200, 1.5 t, 3 días</td><td>Q1,050.00</td><td>Q1,050.00 — OK</td></tr>
+    <tr><td>Cotizar y luego cancelar</td><td>Ingreso Q0.00; continúa disponible</td><td>Ingreso Q0.00; disponible — OK</td></tr>
+    <tr><td>Confirmar alquiler anterior</td><td>Ingreso Q1,050.00; queda ocupado</td><td>Ingreso Q1,050.00; ocupado — OK</td></tr>
+    <tr><td>Cotizar mientras está ocupado</td><td>Permitido; ingreso no cambia</td><td>Permitido; Q1,050.00 — OK</td></tr>
+    <tr><td>Segundo alquiler simultáneo</td><td>Rechazado sin sumar ingreso</td><td>Excepción controlada — OK</td></tr>
+    <tr><td>Devolver y volver a devolver</td><td>Primera válida; segunda rechazada; ingreso intacto</td><td>Comportamiento esperado — OK</td></tr>
+    <tr><td>Placas vacías, repetidas o inexistentes</td><td>Rechazadas sin alterar la flota</td><td>Comportamiento esperado — OK</td></tr>
+    <tr><td>Reporte tras alquilar un automóvil</td><td>6 registrados, 5 disponibles, 1 alquilado, Q700.00</td><td>Coincidencia completa — OK</td></tr>
+  </table>
+  <div class="ok"><strong>Resultado global automatizado:</strong> 31 pruebas aprobadas, 0 fallidas.</div>
+  <h3>6.1 Extracto de ejecución real</h3>
+  <pre class="evidence">[OK] Automovil automatico: Q50 diarios (esperado=Q700.00, obtenido=Q700.00)
+[OK] Motocicleta mayor de 250 cc: Q75 una vez (esperado=Q575.00, obtenido=Q575.00)
+[OK] Camioneta decimal: ejemplo del enunciado (esperado=Q1050.00, obtenido=Q1050.00)
+[OK] Cotizar no registra ingresos (esperado=Q0.00, obtenido=Q0.00)
+[OK] Confirmar registra el ingreso una sola vez (esperado=Q1050.00, obtenido=Q1050.00)
+[OK] Cotizar ocupado tampoco cambia ingresos (esperado=Q1050.00, obtenido=Q1050.00)
+[OK] Devolver conserva los ingresos (esperado=Q1050.00, obtenido=Q1050.00)
+[OK] Reporte: ingreso acumulado (esperado=Q700.00, obtenido=Q700.00)
+
+RESULTADO: 31 aprobadas, 0 fallidas</pre>
+  <pre class="evidence">Seleccione una opcion: abc
+Entrada invalida: debe escribir un numero entero.
+Seleccione una opcion: 6
+Registrados: 6 | Disponibles: 6 | Alquilados: 0
+Ingresos acumulados: Q0.00</pre>
+
+  <h2>7. Datos de demostración</h2>
+  <table>
+    <tr><th>Placa</th><th>Tipo</th><th>Datos relevantes</th></tr>
+    <tr><td>A001</td><td>Automóvil</td><td>Toyota Corolla, Q300, 5 pasajeros, automático</td></tr>
+    <tr><td>A002</td><td>Automóvil</td><td>Honda Civic, Q280, 5 pasajeros, manual</td></tr>
+    <tr><td>M001</td><td>Motocicleta</td><td>Yamaha FZ, Q150, 150 cc</td></tr>
+    <tr><td>M002</td><td>Motocicleta</td><td>Kawasaki Ninja, Q250, 300 cc</td></tr>
+    <tr><td>C001</td><td>Camioneta</td><td>Isuzu NPR, Q200, 1.5 toneladas</td></tr>
+    <tr><td>C002</td><td>Camioneta</td><td>Hino 300, Q300, 3 toneladas</td></tr>
+  </table>
+  <p>Los seis objetos se construyen al iniciar, con placas distintas, todos disponibles y sin ingresos registrados.</p>
+</body>
+</html>
